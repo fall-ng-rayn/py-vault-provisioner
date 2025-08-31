@@ -1,7 +1,5 @@
-import json
-import subprocess
 import time
-from typing import Optional, Tuple
+from typing import Optional
 
 from app.config.settings import settings
 from app.models.CreateVaultResponse import CreateVaultResponse
@@ -27,14 +25,7 @@ def _sleep_minutes(minutes: int):
     time.sleep(minutes * 60)
 
 
-def _get_response(r: subprocess.CompletedProcess) -> Tuple[str, str, str]:
-    out = r.stdout.decode("utf-8")
-    err = r.stderr.decode("utf-8")
-    code = str(r.returncode)
-    return (out, err, code)
-
-
-def create_vault(vault: str) -> Optional[CreateVaultResponse]:
+def try_create_vault(vault: str) -> Optional[CreateVaultResponse]:
     _print(f"Attempting to create vault: {vault}")
     _print(f"max-retries={settings.maxRetries}")
     _print("output-location=output/create")
@@ -60,8 +51,7 @@ def create_vault(vault: str) -> Optional[CreateVaultResponse]:
 
         elif sr.status == OpStatus.SUCCESS:
             try:
-                jr = json.loads(sr.output)
-                validated = CreateVaultResponse.model_validate(jr)
+                validated = CreateVaultResponse.model_validate(sr.formatted_output)
                 _print("Vault created sucessfully!")
                 if settings.shouldBuffer:
                     _sleep_seconds(seconds=2)
