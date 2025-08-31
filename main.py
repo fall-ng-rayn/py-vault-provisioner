@@ -1,5 +1,5 @@
-from argparse import ArgumentParser
 import uuid
+from argparse import ArgumentParser
 from lib.create_vaults import create_vault
 from lib.whoami import get_my_uuid
 
@@ -31,7 +31,6 @@ parser.add_argument(
 )
 
 args = parser.parse_args()
-
 
 def main():
     print("1-PASSWORD-MANAGER: Running application-----------------------------------")

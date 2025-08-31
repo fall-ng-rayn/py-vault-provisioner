@@ -1,20 +1,17 @@
-import sys
-import subprocess
 import json
-
-PRE_SIGN_IN=False
+import subprocess
+import sys
 
 
 # Get the User UUID of the person running the script.
 # This is required for other parts of the script.
 def get_my_uuid() -> str:
-    def _print(s:str):
+    def _print(s: str):
         print(f"\tUUID: {s}")
 
     _print("Ensuring you're signed into 1Password and obtaining your User ID.")
-    if PRE_SIGN_IN is False:
-        sign_in = subprocess.run(["op", "signin"])
-        _print(f"Signin success? {sign_in.returncode == 0}")
+    sign_in = subprocess.run(["op", "signin"])
+    _print(f"\tSignin success? {sign_in.returncode == 0}")
 
     r = subprocess.run(["op", "whoami", "--format=json"], capture_output=True)
 
