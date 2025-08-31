@@ -1,4 +1,3 @@
-from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field, model_validator
@@ -9,17 +8,6 @@ class OpStatus(str, Enum):
     FAILURE = "failure"
     RATE_LIMITED = "rate-limited"
     UNKNOWN = "unknown"
-
-
-class CreateVaultResponse(BaseModel):
-    id: str
-    name: str
-    content_version: int
-    created_at: datetime
-    updated_at: datetime
-    items: int
-    attribute_version: int
-    type: str
 
 
 class SubprocessResponse(BaseModel):

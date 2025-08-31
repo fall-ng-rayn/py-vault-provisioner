@@ -4,7 +4,8 @@ import time
 from typing import Optional, Tuple
 
 from app.config.settings import settings
-from app.models.models import CreateVaultResponse, OpStatus
+from app.models.CreateVaultResponse import CreateVaultResponse
+from app.models.SubprocessResponse import OpStatus
 from app.services.run_command import create_one_vault
 
 
