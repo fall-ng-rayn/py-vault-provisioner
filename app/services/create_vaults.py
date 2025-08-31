@@ -3,9 +3,9 @@ import subprocess
 import time
 from typing import Optional, Tuple
 
-from lib.models import CreateVaultResponse, OpStatus
-from lib.run_command import create_one_vault
-from lib.settings import settings
+from app.config.settings import settings
+from app.models.models import CreateVaultResponse, OpStatus
+from app.services.run_command import create_one_vault
 
 
 def _print(s: str):

@@ -1,7 +1,7 @@
 import subprocess
 from typing import Tuple
 
-from lib.models import SubprocessResponse
+from app.models.models import SubprocessResponse
 
 
 def _get_response(r: subprocess.CompletedProcess) -> Tuple[str, str, int]:
