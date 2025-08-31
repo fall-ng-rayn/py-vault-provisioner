@@ -10,13 +10,6 @@ parser = ArgumentParser(
 )
 
 parser.add_argument(
-    "--whoami",
-    action="store_true",
-    dest="whoami",
-    help="Display basic information about the signed-in user",
-)
-
-parser.add_argument(
     "--named-vault",
     action="store",
     dest="named_vault",
@@ -42,7 +35,7 @@ args = parser.parse_args()
 
 def main():
     print("1-PASSWORD-MANAGER: Running application-----------------------------------")
-    my_uuid: str = get_my_uuid(log=args.whoami)
+    my_uuid: str = get_my_uuid()
 
     if args.named_vault:
         print('STAGE: Create-Single-Vault')
