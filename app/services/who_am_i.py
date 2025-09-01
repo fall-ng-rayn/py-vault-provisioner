@@ -11,7 +11,7 @@ def _print(s: str):
 
 # Get the User UUID of the person running the script.
 # This is required for other parts of the script.
-def get_my_uuid() -> str:
+def try_get_uuid() -> str:
     _print("Ensuring you're signed into 1Password and obtaining your User ID.")
     # r = subprocess.run(["op", "whoami", "--format=json"], capture_output=True)
     r = op_whoami()
