@@ -4,7 +4,7 @@ from typing import List
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class InputFileResult(BaseModel):
+class InputFileParseResult(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     batch_name: str  # e.g. "active-projects" from "active-projects-vault-prefixes.txt"
     path: Path
