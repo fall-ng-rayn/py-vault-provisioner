@@ -2,45 +2,42 @@ import uuid
 
 from app.config.parser import args
 from app.services.create_vaults_with_retries import try_create_vault
+from app.services.load_project_inputs import load_all_inputs, summarize_scan
 from app.services.who_am_i import try_get_uuid
 
 
 def main():
     print("1-PASSWORD-MANAGER: Running application-----------------------------------")
+    print("ONSTART: Get-Identity")
     my_uuid: str = try_get_uuid()
     created_vaults = []
 
-    # TODO - need some way of remembering what vaults we successfully made
-    # so we can "remove ourselves" after
+    if args.from_inputs:
+        print("BRANCH: Batch-From-Inputs")
+        # For now, we just summarize. Next step: iterate and create vaults w/ receipts
+        scan = load_all_inputs()
+        print("\tSCAN: Printing-Inputs-Summary")
+        print(summarize_scan(scan))
+        print("\tSCAN: Scan-Complete")
+        return
 
-    if args.create_one:
+    elif args.create_one:
         print("BRANCH: Create-Single-Vault")
         if args.name:
             print("STAGE: Create-From-User-Provided-Name")
             try_create_vault(args.named_vault)
-            created_vaults.append(args.named_vault)  # TODO - no error checking
+            created_vaults.append(args.named_vault)  # TODO - add error handling
         elif args.random_vault:
             print("STAGE: Create-Vault-With-Random-Suffix")
             random_name = "PY-VAULT-" + uuid.uuid4().hex[:8]
             try_create_vault(random_name)
-            created_vaults.append(random_name)  # TODO - no error checking
+            created_vaults.append(random_name)  # TODO - add error handling
+        else:
+            print("ERROR: --create-one requires either --name or --random")
 
-    # TODO -- now we need to write code that remembers all of the records that we've created
-    # so far (so we can split up vaults we actually-created vs ones that we were supposed
-    # to create but failed to complete... so we can pick up where we left off in case of a
-    # problem with the pipeline).
-    # I think maybe we could just keep an in-memory list, and then write that to file
-    # if it goes wrong? Or maybe better to just write to file as we go so we don't lose
-    # progress...
+    # TODO: persist created_vaults + add rollback record(s)
+    else:
+        print("WARN: no flags provided, exiting")
 
 
 main()
-
-if __name__ == "__main__":
-    from app.services.load_prefix_inputs import load_all_inputs, summarize_scan
-
-    print("------------------------------------------------------------")
-    print("Running scan test")
-
-    scan = load_all_inputs()
-    print(summarize_scan(scan))

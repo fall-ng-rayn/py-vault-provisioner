@@ -1,7 +1,7 @@
 # 1-Password-Manager
 Demo project to showcase account management capabilities of the 1Password CLI tools
 
-### Project Info
+### Usage
 
 #### Example of creating a random vault...
 
@@ -14,8 +14,18 @@ python -m app.main --random-vault
   - Pylance will use 3.9 per `.python-version`, but VS Code doesn't know to use your virtual environment
   - fix: hover over the error and choose Select Interpretter. Chose `(venv) 3.9` instead of the default `3.9`
 
-### 1Password: Service Accounts
-Value Prop:
+### Requirements: 1Password Service Accounts
+
+This project requires a 1Password Service Account. You cannot be signed in as any type of natural user (e.g. Member, Administrator, Owner). This program relies on the existence of a Service Account with the appropriate permissions (create vaults, grant user access)
+
+<details><summary>Click to see more info on Service Accounts</summary>
+
+---
+
+#### Value Prop:
+
+Source: https://developer.1password.com/docs/service-accounts/get-started
+
 > With 1Password Service Accounts, you can build tools to automate secrets management in your applications and infrastructure without deploying additional services.
 
 Service accounts can:
@@ -24,9 +34,6 @@ Service accounts can:
 - Create vaults.
 - Delete vaults.
   - a service account can only delete a vault it created
-
-Source: https://developer.1password.com/docs/service-accounts/get-started
-
 
 #### Usage
 Requirements: User (CLI or 1Password site) needs to be an Owner or Administrator
@@ -41,3 +48,11 @@ op service-account create <serviceAccountName> --expires-in <duration> --vault <
 </br>
 
 **WARNING**: 1Password CLI only returns the service account token once. Save the token in 1Password immediately to avoid losing it. Treat this token like a password, and don't store it in plaintext.
+
+---
+
+</details>
+
+
+
+

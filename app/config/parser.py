@@ -5,11 +5,13 @@ parser = ArgumentParser(
     description="Various helper tools designed to help automate 1Password account management",
 )
 
-parser.add_argument(
+mode = parser.add_mutually_exclusive_group()
+
+# branch: --create-one
+mode.add_argument(
     "--create-one",
     action="store_true",
-    dest="create_one",
-    help="signals to the program that we will make one vault",
+    help="Create a single vault (use with --name or --random)",
 )
 
 parser.add_argument(
@@ -22,9 +24,15 @@ parser.add_argument(
 parser.add_argument(
     "--random",
     action="store_true",
-    dest="random_vault",
+    dest="random",
     help="creates a single vault with a random name",
 )
 
+# branch: --from-inputs
+mode.add_argument(
+    "--from-inputs",
+    action="store_true",
+    help="Batch mode: read ./input/*-vault-prefixes.txt and prepare projects for processing",
+)
 
 args = parser.parse_args()
