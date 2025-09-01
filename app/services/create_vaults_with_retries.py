@@ -4,7 +4,7 @@ from typing import Optional
 from app.config.settings import settings
 from app.models.CreateVaultResponse import CreateVaultResponse
 from app.models.SubprocessResponse import OpStatus
-from app.services.run_command import create_one_vault
+from app.services.run_command import op_create_vault
 
 
 def _print(s: str):
@@ -34,7 +34,7 @@ def try_create_vault(vault: str) -> Optional[CreateVaultResponse]:
     max_attempts = settings.maxRetries if settings.shouldRetry else 1
     while attempts < max_attempts:
         _print("Running op command...")
-        sr = create_one_vault(vault)
+        sr = op_create_vault(vault)
 
         if sr.status == OpStatus.RATE_LIMITED:
             _print(f"`op create vault {vault}` rate-limited: retrying after sleep.")

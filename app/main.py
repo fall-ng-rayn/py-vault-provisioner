@@ -13,21 +13,17 @@ def main():
     # TODO - need some way of remembering what vaults we successfully made
     # so we can "remove ourselves" after
 
-    if args.named_vault:
-        print("STAGE: Create-Single-Vault")
-        try_create_vault(args.named_vault)
-        created_vaults.append(args.named_vault)  # TODO - no error checking
-    elif args.random_vault:
-        print("STAGE: Create-Single-Random-Vault")
-        random_name = "PY-VAULT-" + uuid.uuid4().hex[:8]
-        try_create_vault(random_name)
-        created_vaults.append(random_name)  # TODO - no error checking
-
-    if args.removeMe:
-        print("STAGE: Remove-User-Permissions")
-        for vault in created_vaults:
-            # remove-permissions()
-            print(vault)
+    if args.create_one:
+        print("BRANCH: Create-Single-Vault")
+        if args.named_vault:
+            print("STAGE: Create-From-User-Provided-Name")
+            try_create_vault(args.named_vault)
+            created_vaults.append(args.named_vault)  # TODO - no error checking
+        elif args.random_vault:
+            print("STAGE: Create-Vault-With-Random-Suffix")
+            random_name = "PY-VAULT-" + uuid.uuid4().hex[:8]
+            try_create_vault(random_name)
+            created_vaults.append(random_name)  # TODO - no error checking
 
     # TODO -- now we need to write code that remembers all of the records that we've created
     # so far (so we can split up vaults we actually-created vs ones that we were supposed
