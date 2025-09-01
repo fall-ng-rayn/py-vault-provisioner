@@ -1,7 +1,7 @@
 import json
 from enum import Enum
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class OpStatus(str, Enum):
@@ -12,6 +12,7 @@ class OpStatus(str, Enum):
 
 
 class SubprocessResponse(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     status: OpStatus = Field(default=OpStatus.UNKNOWN)
     formatted_output: dict = Field(default={})
     output: str

@@ -35,3 +35,12 @@ def main():
 
 
 main()
+
+if __name__ == "__main__":
+    from app.services.load_prefix_inputs import load_all_inputs, summarize_scan
+
+    print("------------------------------------------------------------")
+    print("Running scan test")
+
+    scan = load_all_inputs()
+    print(summarize_scan(scan))

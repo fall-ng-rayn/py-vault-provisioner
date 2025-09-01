@@ -5,7 +5,7 @@ from app.models.SubprocessResponse import SubprocessResponse
 
 
 def _get_response(r: subprocess.CompletedProcess) -> Tuple[str, str, int]:
-    print(f"\t\tDEBUG::r={r}")
+    # print(f"\t\tDEBUG::r={r}")
     out = r.stdout.decode("utf-8")
     err = r.stderr.decode("utf-8")
     code = r.returncode

@@ -1,9 +1,10 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class CreateVaultResponse(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
     id: str
     name: str
     content_version: int
