@@ -20,6 +20,7 @@ Designed for batch jobs driven by simple text files, with receipts and rollback.
 - **1Password CLI**: `op` installed and on your PATH
 - **1Password Service Account** with permissions to:
   - create vaults
+  - grant user permissions
   - (optionally) delete vaults (a service account can only delete vaults it created)
 - Service Account token available to the CLI (e.g., environment or `op signin` flow)
 
