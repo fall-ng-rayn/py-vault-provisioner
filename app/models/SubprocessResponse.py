@@ -25,14 +25,13 @@ class SubprocessResponse(BaseModel):
 
     @model_validator(mode="after")
     def _populate_status_and_output(self):
-        print("DEBUG::::validator-model-dump=", self.model_dump())
         if "rate-limited" in self.error:
             self.status = OpStatus.RATE_LIMITED
         elif self.return_code != 0:
             self.status = OpStatus.FAILURE
         elif any([c in self.command for c in JSON_EMIT_CMDS]):
             self.status = OpStatus.SUCCESS
-            self.formatted_output = json.loads(self.output)  # found the culprit
+            self.formatted_output = json.loads(self.output)
         else:
             self.status = OpStatus.SUCCESS
         return self

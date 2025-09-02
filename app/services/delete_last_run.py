@@ -147,6 +147,8 @@ def delete_last_run(run_id: Optional[str] = None, dry_run: bool = False) -> Path
         actor_uuid=actor_uuid,
         started_at=started_at,
         finished_at=finished_at,
+        dry_run=dry_run,
+        planned=planned,
         successes=successes,
         failures=failures,
     )
