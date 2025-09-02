@@ -15,5 +15,7 @@ class Settings(BaseSettings):
 
     maxRetries: int = Field(default=3, alias="MAX_RETRIES")
 
+    usePacificTz: bool = Field(default=True, alias="DATETIME_USE_PACIFIC")
+
 
 settings = Settings()

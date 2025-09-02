@@ -1,6 +1,7 @@
 import uuid
 
 from app.config.parser import args
+from app.services.batch_from_inputs import run_from_inputs
 from app.services.create_vaults_with_retries import try_create_vault
 from app.services.load_project_inputs import load_all_inputs, summarize_scan
 from app.services.who_am_i import try_get_uuid
@@ -9,16 +10,20 @@ from app.services.who_am_i import try_get_uuid
 def main():
     print("1-PASSWORD-MANAGER: Running application-----------------------------------")
     print("ONSTART: Get-Identity")
-    my_uuid: str = try_get_uuid()
+    actor_uuid: str = try_get_uuid()
     created_vaults = []
 
     if args.from_inputs:
         print("BRANCH: Batch-From-Inputs")
         # For now, we just summarize. Next step: iterate and create vaults w/ receipts
         scan = load_all_inputs()
-        print("\tSCAN: Printing-Inputs-Summary")
+        print("STAGE: Printing-Inputs-Summary")
+        print("\tSCAN------------------------")
         print(summarize_scan(scan))
-        print("\tSCAN: Scan-Complete")
+        print("\tSCAN: Scan-Complete---------")
+
+        print("STAGE: Batch-And-Write-Receipts")
+        run_dir = run_from_inputs(actor_uuid)
         return
 
     elif args.create_one:

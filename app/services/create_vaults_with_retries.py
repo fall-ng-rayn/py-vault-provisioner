@@ -68,5 +68,3 @@ def try_create_vault(vault: str) -> Optional[CreateVaultResponse]:
 
         # finally, increment counter
         attempts += 1
-
-    return None
