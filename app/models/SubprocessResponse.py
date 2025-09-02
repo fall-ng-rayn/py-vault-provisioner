@@ -11,21 +11,28 @@ class OpStatus(str, Enum):
     UNKNOWN = "unknown"
 
 
+JSON_EMIT_CMDS = ["create", "list", "get", "whoami"]
+
+
 class SubprocessResponse(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
+    command: str
     status: OpStatus = Field(default=OpStatus.UNKNOWN)
-    formatted_output: dict = Field(default={})
+    formatted_output: dict = Field(default_factory=dict)
     output: str
     error: str
     return_code: int
 
     @model_validator(mode="after")
     def _populate_status_and_output(self):
+        print("DEBUG::::validator-model-dump=", self.model_dump())
         if "rate-limited" in self.error:
             self.status = OpStatus.RATE_LIMITED
         elif self.return_code != 0:
             self.status = OpStatus.FAILURE
+        elif any([c in self.command for c in JSON_EMIT_CMDS]):
+            self.status = OpStatus.SUCCESS
+            self.formatted_output = json.loads(self.output)  # found the culprit
         else:
             self.status = OpStatus.SUCCESS
-            self.formatted_output = json.loads(self.output)
         return self

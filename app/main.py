@@ -3,6 +3,7 @@ import uuid
 from app.config.parser import args
 from app.services.batch_from_inputs import run_from_inputs
 from app.services.create_vaults_with_retries import try_create_vault
+from app.services.delete_last_run import delete_last_run
 from app.services.load_project_inputs import load_all_inputs, summarize_scan
 from app.services.who_am_i import try_get_uuid
 
@@ -26,6 +27,12 @@ def main():
         run_dir = run_from_inputs(actor_uuid)
         return
 
+    if args.delete_last_run:
+        print("BRANCH: Delete-Last-Run")
+        receipt_path = delete_last_run(run_id=args.run_id, dry_run=args.dry_run)
+        print(f"Artifacts written to: {receipt_path.parent}")
+        return
+
     elif args.create_one:
         print("BRANCH: Create-Single-Vault")
         if args.name:
@@ -40,7 +47,6 @@ def main():
         else:
             print("ERROR: --create-one requires either --name or --random")
 
-    # TODO: persist created_vaults + add rollback record(s)
     else:
         print("WARN: no flags provided, exiting")
 

@@ -15,10 +15,8 @@ class RateLimitedError(VaultCreationError):
 
 
 class CommandFailureError(VaultCreationError):
-    def __init__(self, return_code: int, stderr: str | None):
-        msg = f"op create vault failed (return_code={return_code})"
-        if stderr:
-            msg += f": {stderr}"
+    def __init__(self, command: str, return_code: int, stderr: str | None):
+        msg = f"op command ({command}) failed (return_code={return_code}, {'err=' + stderr if stderr else ''})"
         super().__init__(msg)
         self.return_code = return_code
         self.stderr = stderr

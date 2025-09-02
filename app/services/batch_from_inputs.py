@@ -6,12 +6,13 @@ from pathlib import Path
 from typing import Any, Optional
 
 from app.config.settings import settings
+from app.models.PacificDatetime import to_pacific
 from app.models.RunReceipt import (
     RunReceipt,
     VaultFailure,
     VaultSuccess,
-    to_pacific,
 )
+from app.services.create_vaults_with_retries import try_create_vault
 from app.services.exc import VaultCreationError
 from app.services.load_project_inputs import load_all_inputs
 
@@ -110,12 +111,10 @@ def run_from_inputs(uuid: str, base_dir: Optional[Path] = None) -> Path:
                 # for-loop around our role_names.txt results.
                 # vault_name will become project+role_name
                 # (or similar)
-                vault_name = project  # vault name == project string
+                vault_name = project  # currently: vault name == project string
                 try:
-                    # TODO - TESTING -- revert later
-                    # resp = try_create_vault(vault_name)
-                    resp = {"id": secrets.token_hex(8)}  # MONKEYPATCH
-
+                    # was: resp = {"id": secrets.token_hex(8)}  # MONKEYPATCH
+                    resp = try_create_vault(vault_name)
                     vault_id = _extract_vault_id(resp)
 
                     # Record success

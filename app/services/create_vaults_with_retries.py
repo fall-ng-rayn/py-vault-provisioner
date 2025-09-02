@@ -63,7 +63,7 @@ def try_create_vault(vault: str) -> Optional[CreateVaultResponse]:
 
         elif sr.status == OpStatus.FAILURE:
             last_error = CommandFailureError(
-                return_code=sr.return_code, stderr=sr.error
+                command="vault create", return_code=sr.return_code, stderr=sr.error
             )
             _print_oneline(
                 [
@@ -72,12 +72,7 @@ def try_create_vault(vault: str) -> Optional[CreateVaultResponse]:
                     f"error={sr.error}"
                 ]
             )
-            if attempts < max_attempts - 1 and settings.shouldRetry:
-                _sleep_seconds(settings.bufferSeconds)
-                attempts += 1
-                continue
-            else:
-                break
+            break
 
         elif sr.status == OpStatus.SUCCESS:
             try:
@@ -91,24 +86,14 @@ def try_create_vault(vault: str) -> Optional[CreateVaultResponse]:
                     "could not interpret vault creation output: " + str(e)
                 )
                 _print(str(last_error))
-                if attempts < max_attempts - 1 and settings.shouldRetry:
-                    _sleep_seconds(settings.bufferSeconds)
-                    attempts += 1
-                    continue
-                else:
-                    break
+                break
 
         else:
             last_error = UnknownStatusError(
                 f"Unknown status {sr.status!r} (return_code={sr.return_code})"
             )
             _print(str(last_error))
-            if attempts < max_attempts - 1 and settings.shouldRetry:
-                _sleep_seconds(seconds=settings.bufferSeconds)
-                attempts += 1
-                continue
-            else:
-                break
+            break
 
     # Out of attempts -> raise the last error we saw
     raise last_error or VaultCreationError("Vault creation failed for unknown reasons.")

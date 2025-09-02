@@ -35,4 +35,22 @@ mode.add_argument(
     help="Batch mode: read ./input/*-vault-prefixes.txt and prepare projects for processing",
 )
 
+# branch: --delete-last-run
+mode.add_argument(
+    "--delete-last-run",
+    action="store_true",
+    help="Delete all vaults listed in the most recent run's rollback.jsonl.",
+)
+
+parser.add_argument(
+    "--dry-run",
+    action="store_true",
+    help="Do not perform deletions; only print what would be deleted and ouput the deletion receipt",
+)
+parser.add_argument(
+    "--run-id",
+    dest="run_id",
+    help="Target a specific run id (subfolder of output/runs) for --delete-last-run",
+)
+
 args = parser.parse_args()
