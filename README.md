@@ -6,7 +6,7 @@ Designed for batch jobs driven by simple text files, with receipts and rollback.
 ## Features
 
 - **Preview mode**: shows exactly which vaults would be created (no changes)
-- **Batch create**: cross-product of project **prefixes** × role **suffixes**
+- **Batch create**: cross-product of project inputs × role inputs
 - **Duplicate guard**: skips names that already exist (`op vault list`)
 - **Receipts**: per-run `receipt.json` and incremental `rollback.jsonl`
 - **Safe cleanup**: `--delete-last-run` (with `--dry-run`), or target a specific run
@@ -71,23 +71,28 @@ input/
 `active-projects-vault-prefixes.txt`
 ```
 # projects
-Project A
-Project B
+Project-A
+Project-B
 ```
 
 `active-projects-vault-suffixes.txt`
 ```
 # roles
-Engineer
+Dev
+Dev-Lead
 PM
 ```
 
 The tool will plan to create:
 ```
-Project A - Engineer
-Project A - PM
-Project B - Engineer
-Project B - PM
+Project-A.Dev
+Project-A.Dev-Lead
+Project-A.PM
+Project-A.PM-Lead
+Project-B.Dev
+Project-B.Dev-Lead
+Project-B.PM
+Project-B.PM-Lead
 ```
 
 ---
@@ -194,7 +199,7 @@ Specified in `.env`, imported via `app/config/settings.py`. Common knobs:
 
 Defined **only** in `app/config/settings.py`:
 
-- `vaultNameJoiner` (str): joiner between project and role in the vault name (default: `" - "`)
+- `vaultNameJoiner` (str): joiner between project and role in the vault name (default: `"."`)
 
 ---
 
