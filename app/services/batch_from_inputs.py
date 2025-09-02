@@ -17,6 +17,7 @@ from app.services.exc import VaultCreationError
 from app.services.load_project_inputs import load_all_inputs
 
 OUTPUT_BASE_DIR = Path("output") / "runs"
+VAULT_NAME_JOINER = "."  # TODO - consider moving to settings
 
 
 def _now() -> datetime:
@@ -72,12 +73,37 @@ def _extract_vault_id(resp: Any) -> Optional[str]:
     return None
 
 
+def _collect_projects_by_batch(scan) -> dict[str, list[str]]:
+    """
+    Collapse all prefix files by batch_name -> unique, sorted project list.
+    """
+    buckets: dict[str, set[str]] = {}
+    for f in scan.prefix_files:
+        if f.projects:
+            b = buckets.setdefault(f.batch_name, set())
+            b.update(f.projects)
+    return {k: sorted(v) for k, v in buckets.items()}
+
+
+def _collect_roles_by_batch(scan) -> dict[str, list[str]]:
+    """
+    Collapse all suffix files by batch_name -> unique, sorted role list.
+    """
+    buckets: dict[str, set[str]] = {}
+    for f in scan.suffix_files:
+        if f.roles:
+            b = buckets.setdefault(f.batch_name, set())
+            b.update(f.roles)
+    return {k: sorted(v) for k, v in buckets.items()}
+
+
 def run_from_inputs(uuid: str, base_dir: Optional[Path] = None) -> Path:
     """
-    Executes a batch run from ./input/*.txt files.
-    Returns the created run directory path with artifacts:
-      - receipt.json
-      - rollback.jsonl  (one line per successful creation)
+    Executes a batch run from ./input/*-vault-prefixes.txt + *-vault-suffixes.txt.
+    Produces:
+      - receipt JSON  (per-run summary)
+      - rollback.jsonl (one line per successful vault creation)
+    Skips any batch_name that is missing either side (prefixes or suffixes), with a warning.
     """
     now = _now()
     started_at = now
@@ -88,14 +114,15 @@ def run_from_inputs(uuid: str, base_dir: Optional[Path] = None) -> Path:
     scan = load_all_inputs(base_dir=base_dir)
 
     # Aggregate file-level warnings/errors for the final receipt
-    warnings = []
-    errors = []
-    input_files = []
+    warnings: list[str] = []
+    errors: list[str] = []
+    input_files: list[str] = []
 
-    for f in scan.files:
-        input_files.append(f.path.name)
-        warnings.extend(f"[{f.batch_name}] {w}" for w in f.warnings)
-        errors.extend(f"[{f.batch_name}] {e}" for e in f.errors)
+    for files in [scan.prefix_files, scan.suffix_files]:
+        for f in files:
+            input_files.append(f.path.name)
+            warnings.extend(f"[{f.batch_name}] {w}" for w in f.warnings)
+            errors.extend(f"[{f.batch_name}] {e}" for e in f.errors)
 
     successes: list[VaultSuccess] = []
     failures: list[VaultFailure] = []
@@ -103,49 +130,70 @@ def run_from_inputs(uuid: str, base_dir: Optional[Path] = None) -> Path:
     if scan.fatal_errors:
         errors.extend(scan.fatal_errors)
     else:
-        # Process each project line-by-line
-        for f in scan.files:
-            for project in f.projects:
-                # TODO -----------------------------------------------
-                # This will need to change, need to add another
-                # for-loop around our role_names.txt results.
-                # vault_name will become project+role_name
-                # (or similar)
-                vault_name = project  # currently: vault name == project string
-                try:
-                    # was: resp = {"id": secrets.token_hex(8)}  # MONKEYPATCH
-                    resp = try_create_vault(vault_name)
-                    vault_id = _extract_vault_id(resp)
+        # Build cross-product per batch_name, but only when both sides present
+        projects_by_batch = _collect_projects_by_batch(scan)
+        roles_by_batch = _collect_roles_by_batch(scan)
 
-                    # Record success
-                    success = VaultSuccess(
-                        batch_name=f.batch_name,
-                        project=project,
-                        vault_name=vault_name,
-                        vault_id=vault_id,
-                    )
-                    successes.append(success)
+        batches_with_prefix_only = sorted(
+            set(projects_by_batch.keys()) - set(roles_by_batch.keys())
+        )
+        batches_with_suffix_only = sorted(
+            set(roles_by_batch.keys()) - set(projects_by_batch.keys())
+        )
+        for b in batches_with_prefix_only:
+            warnings.append(
+                f"[{b}] Skipping batch: found prefixes but no *-vault-suffixes.txt."
+            )
+        for b in batches_with_suffix_only:
+            warnings.append(
+                f"[{b}] Skipping batch: found suffixes but no *-vault-prefixes.txt."
+            )
 
-                    # Create rollback file
-                    with rollback_path.open("a", encoding="utf-8") as fh:
-                        fh.write(json.dumps(success.model_dump()) + os.linesep)
+        batches_ready = sorted(
+            set(projects_by_batch.keys()) & set(roles_by_batch.keys())
+        )
 
-                    print(f"[OK] {vault_name} (batch={f.batch_name}), id={vault_id}")
-                except VaultCreationError as e:
-                    msg = str(e)
-                    failures.append(
-                        VaultFailure(
-                            batch_name=f.batch_name,
+        for batch_name in batches_ready:
+            projects = projects_by_batch.get(batch_name, [])
+            roles = roles_by_batch.get(batch_name, [])
+            # defensive (shouldn't be empty if batch in batches_ready)
+            if not projects or not roles:
+                warnings.append(
+                    f"[{batch_name}] Skipping batch: empty projects or roles AFTER validation (this shouldn't happen)."
+                )
+                continue
+
+            for project in projects:
+                for role in roles:
+                    vault_name = f"{project}{VAULT_NAME_JOINER}{role}"
+                    try:
+                        resp = try_create_vault(vault_name)
+                        vault_id = _extract_vault_id(resp)
+
+                        success = VaultSuccess(
+                            batch_name=batch_name,
                             project=project,
                             vault_name=vault_name,
-                            error=msg,
+                            vault_id=vault_id,
                         )
-                    )
-                    print(f"[ERR] {vault_name} (batch={f.batch_name}) -> {msg}")
-                # end-try-catch
-            # end-for-f.projects
-        # end-for-scan.files
-    # end-else
+                        successes.append(success)
+
+                        with rollback_path.open("a", encoding="utf-8") as fh:
+                            fh.write(json.dumps(success.model_dump()) + os.linesep)
+
+                        print(f"[OK] {vault_name} (batch={batch_name}), id={vault_id}")
+
+                    except VaultCreationError as e:
+                        msg = str(e)
+                        failures.append(
+                            VaultFailure(
+                                batch_name=batch_name,
+                                project=project,
+                                vault_name=vault_name,
+                                error=msg,
+                            )
+                        )
+                        print(f"[ERR] {vault_name} (batch={batch_name}) -> {msg}")
 
     finished_at = _now()
     receipt = RunReceipt(
