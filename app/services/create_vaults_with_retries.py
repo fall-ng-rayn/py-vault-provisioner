@@ -4,6 +4,13 @@ from typing import Optional
 from app.config.settings import settings
 from app.models.CreateVaultResponse import CreateVaultResponse
 from app.models.SubprocessResponse import OpStatus
+from app.services.exc import (
+    CommandFailureError,
+    OutputParseError,
+    RateLimitedError,
+    UnknownStatusError,
+    VaultCreationError,
+)
 from app.services.run_command import op_create_vault
 
 
@@ -26,21 +33,38 @@ def _sleep_minutes(minutes: int):
 
 
 def try_create_vault(vault: str) -> Optional[CreateVaultResponse]:
+    """
+    Create a vault named `vault`.
+    - On success: returns CreateVaultResponse
+    - On failure: raises VaultCreationError (subclass)
+    """
     _print(f"Attempting to create vault: {vault}")
     _print(f"max-retries={settings.maxRetries}")
-    _print("output-location=output/create")
 
     attempts = 0
     max_attempts = settings.maxRetries if settings.shouldRetry else 1
+    last_error: Optional[VaultCreationError] = None
+
     while attempts < max_attempts:
-        _print("Running op command...")
         sr = op_create_vault(vault)
 
         if sr.status == OpStatus.RATE_LIMITED:
-            _print(f"`op create vault {vault}` rate-limited: retrying after sleep.")
-            _sleep_minutes(minutes=10)
+            last_error = RateLimitedError(
+                message=f"`op create vault {vault}` rate-limited: retrying after sleep.",
+                retry_after_minutes=settings.backoffMin,
+            )
+            _print(str(last_error))
+            if attempts < max_attempts - 1:
+                _sleep_minutes(minutes=settings.backoffMin)
+                attempts += 1
+                continue
+            else:
+                break
 
         elif sr.status == OpStatus.FAILURE:
+            last_error = CommandFailureError(
+                return_code=sr.return_code, stderr=sr.error
+            )
             _print_oneline(
                 [
                     f"`op create vault {vault}` failed:"
@@ -48,23 +72,43 @@ def try_create_vault(vault: str) -> Optional[CreateVaultResponse]:
                     f"error={sr.error}"
                 ]
             )
+            if attempts < max_attempts - 1 and settings.shouldRetry:
+                _sleep_seconds(settings.bufferSeconds)
+                attempts += 1
+                continue
+            else:
+                break
 
         elif sr.status == OpStatus.SUCCESS:
             try:
                 validated = CreateVaultResponse.model_validate(sr.formatted_output)
                 _print("Vault created sucessfully!")
                 if settings.shouldBuffer:
-                    _sleep_seconds(seconds=2)
+                    _sleep_seconds(seconds=settings.bufferSeconds)
                 return validated
             except Exception as e:
-                _print("could not interpret vault creation output: " + str(e))
+                last_error = OutputParseError(
+                    "could not interpret vault creation output: " + str(e)
+                )
+                _print(str(last_error))
+                if attempts < max_attempts - 1 and settings.shouldRetry:
+                    _sleep_seconds(settings.bufferSeconds)
+                    attempts += 1
+                    continue
+                else:
+                    break
 
         else:
-            _print(
-                "something went wrong, vault creation status could not be determined."
-                "return code was " + str(sr.return_code)
+            last_error = UnknownStatusError(
+                f"Unknown status {sr.status!r} (return_code={sr.return_code})"
             )
-            _sleep_seconds(seconds=5)
+            _print(str(last_error))
+            if attempts < max_attempts - 1 and settings.shouldRetry:
+                _sleep_seconds(seconds=settings.bufferSeconds)
+                attempts += 1
+                continue
+            else:
+                break
 
-        # finally, increment counter
-        attempts += 1
+    # Out of attempts -> raise the last error we saw
+    raise last_error or VaultCreationError("Vault creation failed for unknown reasons.")

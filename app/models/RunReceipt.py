@@ -6,8 +6,17 @@ from pydantic import BaseModel, ConfigDict, Field, PlainSerializer
 
 
 def to_pacific(dt: datetime) -> datetime:
-    tz = ZoneInfo("America/Los_Angeles")
-    return datetime.now(tz=tz)
+    """
+    Convert an aware or naive datetime to America/Los_Angeles.
+    - Naive -> assumed UTC.
+    - Aware -> converted to America/Los_Angeles.
+    """
+    pac = ZoneInfo("America/Los_Angeles")
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+    return dt.astimezone(pac)
+    # tz = ZoneInfo("America/Los_Angeles")
+    # return datetime.now(tz=tz)
 
 
 def to_iso_pacific(dt: datetime) -> str:

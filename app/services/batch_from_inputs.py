@@ -12,6 +12,7 @@ from app.models.RunReceipt import (
     VaultSuccess,
     to_pacific,
 )
+from app.services.exc import VaultCreationError
 from app.services.load_project_inputs import load_all_inputs
 
 OUTPUT_BASE_DIR = Path("output") / "runs"
@@ -22,11 +23,10 @@ def _now() -> datetime:
 
 
 def _new_run_id(now: Optional[datetime]) -> str:
-    if now is None:
-        now = _now()
+    now = now or _now()
     if settings.usePacificTz:
-        # e.g. 2025-09-01T16:47-07:00
-        timestamp = to_pacific(now).strftime("%Y-%m-%d_%H-%M-%SZ")
+        # e.g., 2025-09-01_16-47-00-0700
+        timestamp = to_pacific(now).strftime("%Y-%m-%d_%H-%M-%S%z")
     else:
         # e.g. 2025-09-01_01-23-45Z_7f3a2c
         timestamp = now.strftime("%Y-%m-%d_%H-%M-%SZ")
@@ -94,7 +94,7 @@ def run_from_inputs(uuid: str, base_dir: Optional[Path] = None) -> Path:
     for f in scan.files:
         input_files.append(f.path.name)
         warnings.extend(f"[{f.batch_name}] {w}" for w in f.warnings)
-        errors.extend(f"[{f.batch_name}] {w}" for w in f.errors)
+        errors.extend(f"[{f.batch_name}] {e}" for e in f.errors)
 
     successes: list[VaultSuccess] = []
     failures: list[VaultFailure] = []
@@ -132,7 +132,7 @@ def run_from_inputs(uuid: str, base_dir: Optional[Path] = None) -> Path:
                         fh.write(json.dumps(success.model_dump()) + os.linesep)
 
                     print(f"[OK] {vault_name} (batch={f.batch_name}), id={vault_id}")
-                except Exception as e:
+                except VaultCreationError as e:
                     msg = str(e)
                     failures.append(
                         VaultFailure(
