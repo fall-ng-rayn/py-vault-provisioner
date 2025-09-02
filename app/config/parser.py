@@ -1,56 +1,73 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 parser = ArgumentParser(
     prog="vault-manager",
-    description="Various helper tools designed to help automate 1Password account management",
+    description="Utilities to provision and clean up 1Password vaults.",
+    formatter_class=RawDescriptionHelpFormatter,
+    epilog=(
+        "Examples:\n"
+        "  Create one named vault:\n"
+        "    vault-manager --create-one --name 'Project X - Engineer'\n\n"
+        "  Preview vaults from inputs (no changes):\n"
+        "    vault-manager --preview-from-inputs\n\n"
+        "  Batch-create from inputs:\n"
+        "    vault-manager --from-inputs\n\n"
+        "  Delete latest run (dry run):\n"
+        "    vault-manager --delete-last-run --dry-run\n\n"
+        "  Delete a specific run:\n"
+        "    vault-manager --delete-last-run --run-id 2025-09-01_16-47-00-0700_ab12cd\n"
+    ),
 )
 
+# Mutually-exclusive modes
 mode = parser.add_mutually_exclusive_group()
-
-# branch: --create-one
 mode.add_argument(
     "--create-one",
     action="store_true",
-    help="Create a single vault (use with --name or --random)",
+    help="Create a single vault (use with one of --name/--random).",
 )
-
-parser.add_argument(
-    "--name",
-    action="store",
-    dest="name",
-    help="creates a single vault, using the provided vault name",
-)
-
-parser.add_argument(
-    "--random",
-    action="store_true",
-    dest="random",
-    help="creates a single vault with a random name",
-)
-
-# branch: --from-inputs
 mode.add_argument(
     "--from-inputs",
     action="store_true",
-    help="Batch mode: read ./input/*-vault-prefixes.txt and prepare projects for processing",
+    help="Create vaults from ./input/*-vault-{prefixes,suffixes}.txt.",
 )
-
-# branch: --delete-last-run
+mode.add_argument(
+    "--preview-from-inputs",
+    action="store_true",
+    help="Preview vault names from input files (no changes).",
+)
 mode.add_argument(
     "--delete-last-run",
     action="store_true",
-    help="Delete all vaults listed in the most recent run's rollback.jsonl.",
+    help="Delete vaults listed in the latest run's rollback.jsonl.",
 )
 
-parser.add_argument(
+# Create options (mutually exclusive)
+create_opts = parser.add_argument_group("Create options")
+create_choice = create_opts.add_mutually_exclusive_group()
+create_choice.add_argument(
+    "--name",
+    dest="name",
+    help="Vault name to create (with --create-one).",
+)
+create_choice.add_argument(
+    "--random",
+    action="store_true",
+    dest="random",
+    help="Create with a random name (with --create-one).",
+)
+
+# Delete options
+delete_opts = parser.add_argument_group("Delete options")
+delete_opts.add_argument(
     "--dry-run",
     action="store_true",
-    help="Do not perform deletions; only print what would be deleted and ouput the deletion receipt",
+    help="Print actions only; write a receipt but do not delete.",
 )
-parser.add_argument(
+delete_opts.add_argument(
     "--run-id",
     dest="run_id",
-    help="Target a specific run id (subfolder of output/runs) for --delete-last-run",
+    help="Target a specific run folder under output/runs (with --delete-last-run).",
 )
 
 args = parser.parse_args()

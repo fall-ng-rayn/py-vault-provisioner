@@ -14,10 +14,11 @@ from app.models.RunReceipt import (
 )
 from app.services.create_vaults_with_retries import try_create_vault
 from app.services.exc import VaultCreationError
+from app.services.list_vaults import get_existing_vault_index, normalize_vault_name
 from app.services.load_project_inputs import load_all_inputs
 
+VAULT_NAME_JOINER = getattr(settings, "vaultNameJoiner", " - ")
 OUTPUT_BASE_DIR = Path("output") / "runs"
-VAULT_NAME_JOINER = "."  # TODO - consider moving to settings
 
 
 def _now() -> datetime:
@@ -127,6 +128,15 @@ def run_from_inputs(uuid: str, base_dir: Optional[Path] = None) -> Path:
     successes: list[VaultSuccess] = []
     failures: list[VaultFailure] = []
 
+    try:
+        existing_by_name_norm, existing_names_norm = get_existing_vault_index()
+    except Exception as e:
+        # Not fatal—proceed, but surface the limitation
+        warnings.append(
+            f"[global] Could not list existing vaults; duplicate check disabled: {e}"
+        )
+        existing_by_name_norm, existing_names_norm = {}, set()
+
     if scan.fatal_errors:
         errors.extend(scan.fatal_errors)
     else:
@@ -166,6 +176,26 @@ def run_from_inputs(uuid: str, base_dir: Optional[Path] = None) -> Path:
             for project in projects:
                 for role in roles:
                     vault_name = f"{project}{VAULT_NAME_JOINER}{role}"
+                    norm = normalize_vault_name(vault_name)
+
+                    # check to see if our generated vault name already exists
+                    if norm in existing_names_norm:
+                        msg = "already exists"
+                        msg_verbose = msg
+                        existing = existing_by_name_norm.get(norm)
+                        if existing and getattr(existing, "id", None):
+                            msg_verbose += f" (id={existing.id})"
+                        failures.append(
+                            VaultFailure(
+                                batch_name=batch_name,
+                                project=project,
+                                vault_name=vault_name,
+                                error=msg_verbose,
+                            )
+                        )
+                        print(f"[SKIP] {vault_name} (batch={batch_name}) -> {msg}")
+                        continue
+
                     try:
                         resp = try_create_vault(vault_name)
                         vault_id = _extract_vault_id(resp)

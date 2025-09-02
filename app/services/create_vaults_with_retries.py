@@ -38,8 +38,6 @@ def try_create_vault(vault: str) -> Optional[CreateVaultResponse]:
     - On success: returns CreateVaultResponse
     - On failure: raises VaultCreationError (subclass)
     """
-    _print(f"Attempting to create vault: {vault}")
-    _print(f"max-retries={settings.maxRetries}")
 
     attempts = 0
     max_attempts = settings.maxRetries if settings.shouldRetry else 1
@@ -53,7 +51,7 @@ def try_create_vault(vault: str) -> Optional[CreateVaultResponse]:
                 message=f"`op create vault {vault}` rate-limited: retrying after sleep.",
                 retry_after_minutes=settings.backoffMin,
             )
-            _print(str(last_error))
+            _print("[NEW WARN] " + str(last_error))
             if attempts < max_attempts - 1:
                 _sleep_minutes(minutes=settings.backoffMin)
                 attempts += 1
@@ -67,9 +65,9 @@ def try_create_vault(vault: str) -> Optional[CreateVaultResponse]:
             )
             _print_oneline(
                 [
-                    f"`op create vault {vault}` failed:"
-                    f"return-code={sr.return_code},"
-                    f"error={sr.error}"
+                    "[NEW ERR]",
+                    f"`op create vault {vault}` failed:",
+                    f"return-code={sr.return_code},error={sr.error}",
                 ]
             )
             break

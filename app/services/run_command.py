@@ -34,3 +34,7 @@ def op_whoami() -> SubprocessResponse:
 
 def op_delete_vault(identifier: str) -> SubprocessResponse:
     return _op(["op", "vault", "delete", identifier])
+
+
+def op_list_vaults() -> SubprocessResponse:
+    return _op_json(["op", "vault", "list"])

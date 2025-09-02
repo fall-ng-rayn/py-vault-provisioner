@@ -17,5 +17,11 @@ class Settings(BaseSettings):
 
     usePacificTz: bool = Field(default=True, alias="DATETIME_USE_PACIFIC")
 
+    caseSensitiveVaultNames: bool = Field(
+        default=False, alias="CASE_SENSITIVE_VAULT_NAMES"
+    )
+
+    vaultNameJoiner: str = Field(default=".")
+
 
 settings = Settings()
