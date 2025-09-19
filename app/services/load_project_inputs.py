@@ -14,8 +14,8 @@ SUFFIX_FILE_SUFFIX = "-vault-suffixes.txt"
 FILENAME_PREFIXES_PATTERN = re.compile(r".*-vault-prefixes\.txt\Z")
 FILENAME_SUFFIXES_PATTERN = re.compile(r".*-vault-suffixes\.txt\Z")
 
-# 1-63 chars, start alnum, then alnum / - / _
-PROJECT_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9:\s_-]{0,62}\Z")
+# allow letters/digits as the first char; then letters/digits/space/colon/underscore/dash/period for up to 62 more
+PROJECT_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9:\s._-]{0,62}\Z")
 ROLE_PATTERN = re.compile(r"^[A-Za-z][A-Za-z:\s_-]{0,62}\Z")
 
 # Reasonable guardrails
@@ -53,7 +53,7 @@ def _validate_project(project: str) -> Optional[str]:
     Return error message if invalid, else None
     """
     if not PROJECT_PATTERN.match(project):
-        return "Invalid project prefix (allowed: letters, digits, '-', '_', ':' and spaces; 1-63 chars; must start alphanumeric)"
+        return "Invalid project prefix (allowed: letters, digits, '.', '-', '_', ':' and spaces; 1-63 chars; must start alphanumeric)"
     return None
 
 

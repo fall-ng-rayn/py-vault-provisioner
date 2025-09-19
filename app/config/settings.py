@@ -21,7 +21,7 @@ class Settings(BaseSettings):
         default=False, alias="CASE_SENSITIVE_VAULT_NAMES"
     )
 
-    vaultNameJoiner: str = Field(default=".")
+    vaultNameJoiner: str = Field(default=" - ")
 
 
 settings = Settings()

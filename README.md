@@ -58,7 +58,7 @@ The `*` becomes the **batch_name**. A batch is processed only if **both** files 
 Lines:
 - One entry per line
 - Blank lines and lines starting with `#` are ignored
-- Validation: 1–63 chars, must start alphanumeric, allowed: letters, digits, spaces, `-`, `_`, `:`
+- Validation: 1–63 chars, must start alphanumeric, allowed: letters, digits, spaces,'.' `-`, `_`, `:`
 - Duplicates are ignored (warned)
 
 **Example**
