@@ -14,7 +14,7 @@ from app.models.RunReceipt import (
 )
 from app.services.create_vaults_with_retries import try_create_vault
 from app.services.exc import VaultCreationError
-from app.services.list_vaults import get_existing_vault_index, normalize_vault_name
+from app.services.list_vaults import canonical_vault_key, get_existing_vault_indexes, normalize_vault_name
 from app.services.load_project_inputs import load_all_inputs
 
 VAULT_NAME_JOINER = getattr(settings, "vaultNameJoiner", " - ")
@@ -129,13 +129,10 @@ def run_from_inputs(uuid: str, base_dir: Optional[Path] = None) -> Path:
     failures: list[VaultFailure] = []
 
     try:
-        existing_by_name_norm, existing_names_norm = get_existing_vault_index()
+        by_norm, norm_keys, by_canon, canon_keys = get_existing_vault_indexes()
     except Exception as e:
-        # Not fatal—proceed, but surface the limitation
-        warnings.append(
-            f"[global] Could not list existing vaults; duplicate check disabled: {e}"
-        )
-        existing_by_name_norm, existing_names_norm = {}, set()
+        warnings.append(f"[global] Could not list existing vaults; duplicate checks disabled: {e}")
+        by_norm, norm_keys, by_canon, canon_keys = {}, set(), {}, set()
 
     if scan.fatal_errors:
         errors.extend(scan.fatal_errors)
@@ -175,25 +172,44 @@ def run_from_inputs(uuid: str, base_dir: Optional[Path] = None) -> Path:
 
             for project in projects:
                 for role in roles:
+                    # vault_name = f"{project}{VAULT_NAME_JOINER}{role}"
                     vault_name = f"{project}{VAULT_NAME_JOINER}{role}"
-                    norm = normalize_vault_name(vault_name)
 
-                    # check to see if our generated vault name already exists
-                    if norm in existing_names_norm:
+                    # 1) Exact duplicate (normalized) ----------------------------------------
+                    nk = normalize_vault_name(vault_name)
+                    if nk in norm_keys:
                         msg = "already exists"
-                        msg_verbose = msg
-                        existing = existing_by_name_norm.get(norm)
-                        if existing and getattr(existing, "id", None):
-                            msg_verbose += f" (id={existing.id})"
-                        failures.append(
-                            VaultFailure(
-                                batch_name=batch_name,
-                                project=project,
-                                vault_name=vault_name,
-                                error=msg_verbose,
-                            )
-                        )
+                        verbose = msg
+                        v = by_norm.get(nk)
+                        if v and getattr(v, "id", None):
+                            verbose += f" (id={v.id})"
+                        failures.append(VaultFailure(
+                            batch_name=batch_name,
+                            project=project,
+                            vault_name=vault_name,
+                            error=verbose,
+                        ))
                         print(f"[SKIP] {vault_name} (batch={batch_name}) -> {msg}")
+                        continue
+
+                    # 2) Canonical conflict (ignore case, spaces, dashes) ---------------------
+                    ck = canonical_vault_key(vault_name)
+                    if ck in canon_keys:
+                        # Show one exemplar for clarity
+                        exemplar = (by_canon.get(ck) or [None])[0]
+                        verbose = "conflicts with existing vault when ignoring case, spaces, and dashes"
+                        if exemplar:
+                            verbose += f" (existing '{exemplar.name}'"
+                            if getattr(exemplar, "id", None):
+                                verbose += f", id={exemplar.id}"
+                            verbose += ")"
+                        failures.append(VaultFailure(
+                            batch_name=batch_name,
+                            project=project,
+                            vault_name=vault_name,
+                            error=verbose,
+                        ))
+                        print(f"[SKIP-FUZZY] {vault_name} (batch={batch_name}) -> {verbose}")
                         continue
 
                     try:
