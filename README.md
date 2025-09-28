@@ -183,6 +183,23 @@ Timestamps are emitted in **America/Los_Angeles** (configurable).
 
 ---
 
+## 1Password CLI Rate Limiting
+- hourly limits:
+  - business: 10k reads+writes / 24hr / account
+  - teams: 1k reads+writes / 24hr / account
+  - source: https://developer.1password.com/docs/service-accounts/rate-limits/#hourly-limits
+- daily limits:
+  - business: 50k reads+writes / 24hr / account
+  - teams: 5k reads+writes / 24hr / account
+  - source: https://developer.1password.com/docs/service-accounts/rate-limits/#daily-limits
+
+Try also running this...
+```
+op service-account ratelimit <service-account>
+```
+
+---
+
 ## Configuration (selected)
 
 Specified **only** in `.env`: (see: Service Accounts)
@@ -249,3 +266,17 @@ If Pylance flags `pydantic` imports:
 - JSON preview output (`--preview-from-inputs --as-json`)
 - Per-run config overrides (e.g., custom joiner)  
 - Batch “dry run” mode for create
+
+
+---
+
+## Granting permissions to one user for all accounts
+
+```
+# either obtain a list of vault_ids that you need to add permissions,
+#   or use a service_account which only has access to those vaults
+op vault list --format=json | jq -r '.[].id' > service_account_ids.txt
+
+# pipe the output of those IDs to `op vault user grant` command
+cat service_account_ids.txt | xargs -n1 -I{} op vault user grant --vault {} --user user@domain.org --permissions allow_viewing,allow_editing
+```
